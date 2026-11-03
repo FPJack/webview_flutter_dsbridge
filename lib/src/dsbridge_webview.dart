@@ -15,7 +15,26 @@ class DSBridgeWebView extends StatefulWidget {
     required this.controller,
     this.gestureRecognizers = const <Factory<OneSequenceGestureRecognizer>>{},
     this.layoutDirection = TextDirection.ltr,
-  });
+  }) : webViewWidget = null;
+
+  /// 直接使用外部构建好的 [WebViewWidget]，
+  /// 例如通过 [WebViewWidget.fromPlatformCreationParams] 设置了平台特有参数。
+  ///
+  /// [webViewWidget] 必须基于 [controller] 的 [DSBridgeController.webViewController] 创建。
+  /// 此时手势识别器与布局方向以 [webViewWidget] 自身的配置为准。
+  DSBridgeWebView.fromWidget({
+    super.key,
+    required this.controller,
+    required WebViewWidget this.webViewWidget,
+  })  : gestureRecognizers = webViewWidget.gestureRecognizers,
+        layoutDirection = webViewWidget.layoutDirection,
+        assert(
+          identical(
+            webViewWidget.platform.params.controller,
+            controller.webViewController.platform,
+          ),
+          'webViewWidget must be created with controller.webViewController.',
+        );
 
   /// 桥接控制器。
   final DSBridgeController controller;
@@ -25,6 +44,9 @@ class DSBridgeWebView extends StatefulWidget {
 
   /// 透传给 [WebViewWidget] 的布局方向。
   final TextDirection layoutDirection;
+
+  /// 外部传入的 [WebViewWidget]，不为 `null` 时直接渲染它。
+  final WebViewWidget? webViewWidget;
 
   @override
   State<DSBridgeWebView> createState() => _DSBridgeWebViewState();
@@ -55,6 +77,10 @@ class _DSBridgeWebViewState extends State<DSBridgeWebView> {
 
   @override
   Widget build(BuildContext context) {
+    final WebViewWidget? custom = widget.webViewWidget;
+    if (custom != null) {
+      return custom;
+    }
     return WebViewWidget(
       controller: widget.controller.webViewController,
       gestureRecognizers: widget.gestureRecognizers,
