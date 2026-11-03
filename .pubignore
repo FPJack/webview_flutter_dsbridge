@@ -1,0 +1,20 @@
+# Files excluded from `flutter pub publish`
+.idea/
+.dart_tool/
+*.iml
+.DS_Store
+build/
+pubspec.lock
+.flutter-plugins-dependencies
+
+# demo build artifacts
+demo/build/
+demo/.dart_tool/
+demo/pubspec.lock
+demo/android/.gradle/
+demo/android/local.properties
+demo/ios/Pods/
+demo/ios/Flutter/ephemeral/
+demo/ios/Flutter/Generated.xcconfig
+demo/ios/Flutter/flutter_export_environment.sh
+
