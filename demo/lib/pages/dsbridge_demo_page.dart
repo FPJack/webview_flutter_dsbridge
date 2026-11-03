@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter_dsbridge/webview_flutter_dsbridge.dart';
 
 import '../bridge/js_api.dart';
+import 'dsbridge_web_page.dart';
 
 /// Loads `assets/web/test.html` and demonstrates both directions:
 /// * JavaScript -> Flutter: buttons inside the web page.
@@ -101,6 +102,14 @@ class _DSBridgeDemoPageState extends State<DSBridgeDemoPage> {
       appBar: AppBar(
         title: const Text('DSBridge Demo'),
         actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.open_in_browser),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DSBridgeWebPage(url: 'https://flutter.dev'),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => _controller.webViewController.reload(),
