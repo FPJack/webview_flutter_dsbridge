@@ -2,6 +2,22 @@
 
 基于 `webview_flutter` 的 DSBridge Flutter 实现，兼容网页端 `dsbridge.js`（v3），API 与 iOS `DWKWebView` 一一对应，同时支持 iOS / Android。
 
+
+[中文简体](https://github.com/wendux/DSBridge-IOS/blob/master/readme-chs.md)   
+# DSBridge  for  IOS
+
+![dsBridge](https://github.com/wendux/DSBridge-IOS/raw/master/img/dsbridge.png)
+
+
+[![cocoapods](https://img.shields.io/cocoapods/v/dsBridge.svg?style=flat)](https://github.com/wendux/DSBridge-IOS)  ![](https://img.shields.io/badge/language-object--c-yellow.svg) [![](https://travis-ci.org/wendux/DSBridge-IOS.svg?branch=master)](https://travis-ci.org/wendux/DSBridge-IOS) [![MIT Licence](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://opensource.org/licenses/mit-license.php)  ![support](https://img.shields.io/badge/support-IOS%208%2B-green.svg) ![platform](https://img.shields.io/badge/platform-ios|osx-ff69b4.svg) [![GitHub last commit](https://img.shields.io/github/last-commit/wendux/DSBridge-IOS.svg?color=blue)](https://github.com/wendux/DSBridge-IOS/) 
+
+
+> Modern cross-platform JavaScript bridge, through which you can invoke each other's functions synchronously or asynchronously between JavaScript and native applications.
+
+   
+DSBridge-Android：https://github.com/wendux/DSBridge-Android 
+
+
 ## 原理
 
 | 方向 | 实现 |
