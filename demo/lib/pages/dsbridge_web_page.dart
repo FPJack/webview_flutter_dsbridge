@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:webview_flutter_dsbridge/webview_flutter_dsbridge.dart';
 
 /// 通用网页容器：内部使用 [DSBridgeWebView] 渲染。
@@ -275,28 +276,102 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
 
 /// 网页加载进度条。
 ///
-/// * 始终为确定进度模式：`LinearProgressIndicator(value: null)` 的不确定模式是来回扫动的动画，
-///   看起来就像进度条倒退；
-/// * 进度变化时平滑过渡；新一轮加载通过外部更换 key 从 0 重新开始，不会出现倒退动画。
-class _ProgressBar extends StatelessWidget {
+/// * 真实进度没有变化时，显示值自己缓慢前进（越接近 [_creepMax] 越慢），到 [_creepMax] 停下；
+/// * 真实进度超过当前显示值时，快速追上真实进度；
+/// * 真实进度小于当前显示值时忽略，显示值只增不减；
+/// * 始终为确定进度模式，不使用来回扫动的不确定动画；
+/// * 新一轮加载由外部更换 key 从 0 重新开始。
+class _ProgressBar extends StatefulWidget {
   const _ProgressBar({super.key, required this.progress});
 
-  /// 0 ~ 100。
+  /// 真实进度 0 ~ 100。
   final int progress;
 
-  /// 刚开始加载时至少显示一小段，让用户感知正在加载。
-  static const double _minValue = 0.05;
+  @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> with SingleTickerProviderStateMixin {
+  /// 起始显示值，让用户立即感知正在加载。
+  static const double _startValue = 0.05;
+
+  /// 没有真实进度推动时，自动前进的上限。
+  static const double _creepMax = 0.9;
+
+  /// 自动前进速度：每秒走完剩余距离（到 [_creepMax]）的比例，越靠近上限越慢。
+  static const double _creepRate = 0.35;
+
+  /// 追赶真实进度的速度：每秒走完剩余距离的比例。
+  static const double _catchUpRate = 8;
+
+  /// 距离目标小于该值即视为到达。
+  static const double _epsilon = 0.001;
+
+  late final Ticker _ticker;
+  Duration _lastElapsed = Duration.zero;
+  double _value = _startValue;
+
+  double get _realValue => (widget.progress / 100).clamp(0.0, 1.0);
+
+  @override
+  void initState() {
+    super.initState();
+    _value = _realValue > _startValue ? _realValue : _startValue;
+    _ticker = createTicker(_onTick)..start();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 真实进度变大且动画已停止时，重新启动去追赶；变小则忽略。
+    if (_realValue > _value && !_ticker.isActive) {
+      _lastElapsed = Duration.zero;
+      _ticker.start();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _onTick(Duration elapsed) {
+    final double dt = (elapsed - _lastElapsed).inMicroseconds / Duration.microsecondsPerSecond;
+    _lastElapsed = elapsed;
+    if (dt <= 0) {
+      return;
+    }
+
+    final double real = _realValue;
+    double next = _value;
+    if (real > _value) {
+      // 跟随真实进度。
+      next += (real - _value) * (dt * _catchUpRate).clamp(0.0, 1.0);
+      if (real - next < _epsilon) {
+        next = real;
+      }
+    } else if (_value < _creepMax) {
+      // 真实进度没变：缓慢自动前进，越接近上限越慢。
+      next += (_creepMax - _value) * (dt * _creepRate).clamp(0.0, 1.0);
+      if (_creepMax - next < _epsilon) {
+        next = _creepMax;
+      }
+    }
+
+    if (next != _value) {
+      setState(() => _value = next);
+    }
+
+    // 已到达上限且没有更大的真实进度需要追赶时停止，节省资源。
+    if (_value >= _creepMax && _realValue <= _value) {
+      _ticker.stop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final double target = (progress / 100).clamp(_minValue, 1.0);
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: target),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      builder: (BuildContext context, double value, Widget? child) =>
-          LinearProgressIndicator(value: value, minHeight: 2),
-    );
+    return LinearProgressIndicator(value: _value, minHeight: 2);
   }
 }
 
