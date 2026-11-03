@@ -41,8 +41,11 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
 
   late final DSBridgeController _controller;
 
-  /// 加载进度 0 ~ 100。
+  /// 加载进度 0 ~ 100，同一轮加载内只增不减。
   int _progress = 0;
+
+  /// 加载轮次，每开始新一轮加载 +1，用于让进度条从 0 重新开始而不是“倒退”动画。
+  int _loadCycle = 0;
 
   /// 网页自身的标题。
   String? _webTitle;
@@ -60,15 +63,15 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
       ..setJavascriptCloseWindowListener(_closePage);
     _controller.webViewController.setNavigationDelegate(
       NavigationDelegate(
-        onProgress: (int progress) {
-          if (mounted) {
-            setState(() => _progress = progress);
-          }
-        },
+        onProgress: _onProgress,
         onPageStarted: (String url) {
           if (mounted) {
             setState(() {
-              _progress = 0;
+              // 只有上一轮已完成时才开始新一轮；同一轮内（如重定向）不重置进度，
+              // 否则已上报的进度会被清零，出现进度条倒退。
+              if (_progress >= 100) {
+                _startNewCycle();
+              }
               _errorMessage = null;
               _failedUrl = null;
             });
@@ -129,7 +132,7 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
     }
     setState(() {
       _errorMessage = null;
-      _progress = 0;
+      _startNewCycle();
     });
     try {
       await _controller.loadRequest(uri);
@@ -140,6 +143,35 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
           _failedUrl = url;
         });
       }
+    }
+  }
+
+  /// 开始新一轮加载（需在 setState 内调用）。
+  void _startNewCycle() {
+    _progress = 0;
+    _loadCycle++;
+  }
+
+  /// 进度回调：同一轮加载内忽略比当前小的值，避免进度条来回跳动。
+  ///
+  /// WebView 在重定向、子请求时上报的进度可能回落（如 70 -> 10 -> 80），
+  /// 直接使用会让进度条倒退。
+  void _onProgress(int progress) {
+    if (!mounted) {
+      return;
+    }
+    if (_progress >= 100) {
+      // 上一轮已结束，新的进度代表新一轮加载（如点击网页内链接）。
+      if (progress < 100) {
+        setState(() {
+          _startNewCycle();
+          _progress = progress;
+        });
+      }
+      return;
+    }
+    if (progress > _progress) {
+      setState(() => _progress = progress);
     }
   }
 
@@ -190,10 +222,7 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
   @override
   Widget build(BuildContext context) {
     final Widget progressBar = _progress < 100 && _errorMessage == null
-        ? LinearProgressIndicator(
-            value: _progress <= 0 ? null : _progress / 100,
-            minHeight: 2,
-          )
+        ? _ProgressBar(key: ValueKey<int>(_loadCycle), progress: _progress)
         : const SizedBox(height: 2);
 
     final Widget content = Stack(
@@ -240,6 +269,33 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
         // 无导航栏时避开状态栏/刘海区域。
         body: widget.hideAppBar ? SafeArea(bottom: false, child: content) : content,
       ),
+    );
+  }
+}
+
+/// 网页加载进度条。
+///
+/// * 始终为确定进度模式：`LinearProgressIndicator(value: null)` 的不确定模式是来回扫动的动画，
+///   看起来就像进度条倒退；
+/// * 进度变化时平滑过渡；新一轮加载通过外部更换 key 从 0 重新开始，不会出现倒退动画。
+class _ProgressBar extends StatelessWidget {
+  const _ProgressBar({super.key, required this.progress});
+
+  /// 0 ~ 100。
+  final int progress;
+
+  /// 刚开始加载时至少显示一小段，让用户感知正在加载。
+  static const double _minValue = 0.05;
+
+  @override
+  Widget build(BuildContext context) {
+    final double target = (progress / 100).clamp(_minValue, 1.0);
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: target),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      builder: (BuildContext context, double value, Widget? child) =>
+          LinearProgressIndicator(value: value, minHeight: 2),
     );
   }
 }
