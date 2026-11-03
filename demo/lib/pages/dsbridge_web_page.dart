@@ -12,6 +12,7 @@ class DSBridgeWebPage extends StatefulWidget {
     super.key,
     required this.url,
     this.title,
+    this.hideAppBar = false,
     this.onControllerCreated,
   });
 
@@ -20,6 +21,12 @@ class DSBridgeWebPage extends StatefulWidget {
 
   /// 标题，为 `null` 或空字符串时使用网页标题。
   final String? title;
+
+  /// 是否隐藏导航栏，默认显示。
+  ///
+  /// 隐藏后进度条显示在页面顶部，网页内容避开状态栏区域；
+  /// 可通过系统返回键、错误页的“返回”按钮或网页调用 `window.close()` 关闭页面。
+  final bool hideAppBar;
 
   /// 控制器创建后回调，可用于注册 JavaScript 对象等（在加载页面之前调用）。
   final void Function(DSBridgeController controller)? onControllerCreated;
@@ -182,6 +189,31 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
 
   @override
   Widget build(BuildContext context) {
+    final Widget progressBar = _progress < 100 && _errorMessage == null
+        ? LinearProgressIndicator(
+            value: _progress <= 0 ? null : _progress / 100,
+            minHeight: 2,
+          )
+        : const SizedBox(height: 2);
+
+    final Widget content = Stack(
+      children: <Widget>[
+        DSBridgeWebView(controller: _controller),
+        if (_errorMessage != null)
+          Positioned.fill(
+            child: _ErrorView(
+              message: _errorMessage!,
+              onRetry: _retry,
+              // 无导航栏时提供返回入口（iOS 没有系统返回键）。
+              onClose: widget.hideAppBar ? _closePage : null,
+            ),
+          ),
+        // 隐藏导航栏时，进度条叠加在网页顶部。
+        if (widget.hideAppBar)
+          Positioned(top: 0, left: 0, right: 0, child: progressBar),
+      ],
+    );
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
@@ -190,33 +222,23 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_displayTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-          actions: <Widget>[
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(2),
-            child: _progress < 100 && _errorMessage == null
-                ? LinearProgressIndicator(
-                    value: _progress <= 0 ? null : _progress / 100,
-                    minHeight: 2,
-                  )
-                : const SizedBox(height: 2),
-          ),
-        ),
-        body: Stack(
-          children: <Widget>[
-            DSBridgeWebView(controller: _controller),
-            if (_errorMessage != null)
-              Positioned.fill(
-                child: _ErrorView(message: _errorMessage!, onRetry: _retry),
+        appBar: widget.hideAppBar
+            ? null
+            : AppBar(
+                title: Text(_displayTitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                actions: <Widget>[
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: _closePage,
+                  ),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(2),
+                  child: progressBar,
+                ),
               ),
-          ],
-        ),
+        // 无导航栏时避开状态栏/刘海区域。
+        body: widget.hideAppBar ? SafeArea(bottom: false, child: content) : content,
       ),
     );
   }
@@ -224,10 +246,13 @@ class _DSBridgeWebPageState extends State<DSBridgeWebPage> {
 
 /// 网页加载失败时展示的错误页。
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
+  const _ErrorView({required this.message, required this.onRetry, this.onClose});
 
   final String message;
   final VoidCallback onRetry;
+
+  /// 不为 `null` 时额外展示“返回”按钮。
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -255,6 +280,10 @@ class _ErrorView extends StatelessWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('重新加载'),
               ),
+              if (onClose != null) ...<Widget>[
+                const SizedBox(height: 8),
+                TextButton(onPressed: onClose, child: const Text('返回')),
+              ],
             ],
           ),
         ),

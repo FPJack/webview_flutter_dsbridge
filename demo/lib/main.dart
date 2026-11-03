@@ -58,6 +58,15 @@ class HomePage extends StatelessWidget {
             ),
           ),
           ListTile(
+            leading: const Icon(Icons.fullscreen),
+            title: const Text('Flutter 官网（隐藏导航栏）'),
+            subtitle: const Text(flutterUrl),
+            onTap: () => _push(
+              context,
+              const DSBridgeWebPage(url: flutterUrl, hideAppBar: true),
+            ),
+          ),
+          ListTile(
             leading: const Icon(Icons.error_outline),
             title: const Text('错误页示例'),
             subtitle: const Text('https://not-exist.flutter.invalid'),
