@@ -1,6 +1,6 @@
 name: webview_flutter_dsbridge
 description: "dsbirdge flutter 版本，基于flutter官方插件webview_flutter实现"
-version: 1.1.0
+version: 1.2.0
 homepage: https://github.com/FPJack/webview_flutter_dsbridge
 repository: https://github.com/FPJack/webview_flutter_dsbridge
 issue_tracker: https://github.com/FPJack/webview_flutter_dsbridge/issues

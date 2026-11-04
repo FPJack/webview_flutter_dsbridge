@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import 'ds_ui_delegate.dart';
 
-/// 使用 Flutter 组件展示内置的 JavaScript 弹窗（alert / confirm / prompt），
+/// 使用 iOS 风格（Cupertino）组件展示内置的 JavaScript 弹窗（alert / confirm / prompt），
 /// 对应 `DWKWebView` 中 `UIAlertController` 的默认实现。
 ///
 /// 仅当所属的 WebView 组件已挂载、且当前没有其他桥接弹窗显示时才会展示；
@@ -35,7 +35,7 @@ class DSDialogPresenter {
     }
     _isShowing = true;
     try {
-      return await showDialog<T>(
+      return await showCupertinoDialog<T>(
         context: context,
         barrierDismissible: false,
         useRootNavigator: true,
@@ -49,13 +49,14 @@ class DSDialogPresenter {
   /// 展示 alert；无法展示时返回 `false`。
   Future<bool> alert(String message) async {
     final bool? result = await _present<bool>(
-      (BuildContext context) => AlertDialog(
-        title: Text(_label(DSDialogLabelKeys.alertTitle, '提示')),
-        content: SingleChildScrollView(child: Text(message)),
+      (BuildContext context) => CupertinoAlertDialog(
+        title: Text(_label(DSDialogLabelKeys.alertTitle, 'Alert')),
+        content: Text(message),
         actions: <Widget>[
-          TextButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_label(DSDialogLabelKeys.alertBtn, '确定')),
+            child: Text(_label(DSDialogLabelKeys.alertBtn, 'OK')),
           ),
         ],
       ),
@@ -66,17 +67,18 @@ class DSDialogPresenter {
   /// 展示 confirm；无法展示时返回 `null`。
   Future<bool?> confirm(String message) {
     return _present<bool>(
-      (BuildContext context) => AlertDialog(
-        title: Text(_label(DSDialogLabelKeys.confirmTitle, '提示')),
-        content: SingleChildScrollView(child: Text(message)),
+      (BuildContext context) => CupertinoAlertDialog(
+        title: Text(_label(DSDialogLabelKeys.confirmTitle, 'Alert')),
+        content: Text(message),
         actions: <Widget>[
-          TextButton(
+          CupertinoDialogAction(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(_label(DSDialogLabelKeys.confirmCancelBtn, '取消')),
+            child: Text(_label(DSDialogLabelKeys.confirmCancelBtn, 'Cancel')),
           ),
-          TextButton(
+          CupertinoDialogAction(
+            isDefaultAction: true,
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_label(DSDialogLabelKeys.confirmOkBtn, '确定')),
+            child: Text(_label(DSDialogLabelKeys.confirmOkBtn, 'OK')),
           ),
         ],
       ),
@@ -89,8 +91,8 @@ class DSDialogPresenter {
       (BuildContext context) => _PromptDialog(
         message: message,
         defaultText: defaultText,
-        cancelText: _label(DSDialogLabelKeys.promptCancelBtn, '取消'),
-        okText: _label(DSDialogLabelKeys.promptOkBtn, '确定'),
+        cancelText: _label(DSDialogLabelKeys.promptCancelBtn, 'Cancel'),
+        okText: _label(DSDialogLabelKeys.promptOkBtn, 'OK'),
       ),
     );
   }
@@ -124,18 +126,29 @@ class _PromptDialogState extends State<_PromptDialog> {
     super.dispose();
   }
 
+  void _submit() => Navigator.of(context).pop(_textController.text);
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return CupertinoAlertDialog(
       title: Text(widget.message),
-      content: TextField(controller: _textController, autofocus: true),
+      content: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: CupertinoTextField(
+          controller: _textController,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
       actions: <Widget>[
-        TextButton(
+        CupertinoDialogAction(
           onPressed: () => Navigator.of(context).pop(''),
           child: Text(widget.cancelText),
         ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(_textController.text),
+        CupertinoDialogAction(
+          isDefaultAction: true,
+          onPressed: _submit,
           child: Text(widget.okText),
         ),
       ],

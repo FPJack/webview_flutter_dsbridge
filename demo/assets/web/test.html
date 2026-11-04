@@ -47,6 +47,48 @@
 <div class="btn" onclick="hasNativeMethod('xx')">hasNativeMethod("xx")</div>
 <div class="btn" onclick="hasNativeMethod('testSyn')">hasNativeMethod("testSyn")</div>
 
+<!-- 网页原生弹窗测试：alert / confirm / prompt -->
+<div class="btn" onclick="testAlert()">alert 弹窗</div>
+<div class="btn" onclick="testConfirm()">confirm 弹窗</div>
+<div class="btn" onclick="testPrompt()">prompt 弹窗</div>
+<div class="btn" onclick="testAllDialogs()">依次弹出三种弹窗</div>
+<div id="dialogResult" style="margin: 30px; font-size: 24px; color: #333; word-break: break-all;">弹窗结果：</div>
+
+<script>
+    function showDialogResult(text) {
+        document.getElementById("dialogResult").innerText = "弹窗结果：" + text;
+    }
+
+    function testAlert() {
+        alert("这是一个 alert 弹窗\n第二行内容：Hello DSBridge!");
+        // alert 阻塞时，关闭弹窗后才会执行下一行
+        showDialogResult("alert 已关闭");
+    }
+
+    function testConfirm() {
+        var ok = confirm("这是一个 confirm 弹窗，确定要继续吗？");
+        showDialogResult("confirm 返回 " + ok + (ok ? "（点击了确定）" : "（点击了取消）"));
+    }
+
+    function testPrompt() {
+        var value = prompt("这是一个 prompt 弹窗，请输入你的名字：", "默认值 Flutter");
+        // 注意：webview_flutter 的 prompt 回调只能返回字符串，点击取消时返回空字符串而不是 null
+        if (value === null || value === "") {
+            showDialogResult("prompt 返回空（点击了取消或未输入）");
+        } else {
+            showDialogResult("prompt 返回 \"" + value + "\"");
+        }
+    }
+
+    function testAllDialogs() {
+        alert("第 1 步：alert");
+        var ok = confirm("第 2 步：confirm，是否继续输入？");
+        var name = ok ? prompt("第 3 步：prompt，请输入内容：", "abc") : null;
+        alert("结果汇总\nconfirm: " + ok + "\nprompt: " + name);
+        showDialogResult("confirm=" + ok + ", prompt=" + name);
+    }
+</script>
+
 <script>
 
     function callSyn() {
