@@ -12,6 +12,9 @@ class JsApi extends DSJavascriptObject {
     registerSyncMethod('testNoArgSyn', testNoArgSyn);
     registerAsyncMethod('testNoArgAsyn', testNoArgAsyn);
     registerAsyncMethod('callProgress', callProgress);
+    registerSyncMethod('agreeTerms', testSyn);
+
+
   }
 
   final Set<Timer> _timers = <Timer>{};
