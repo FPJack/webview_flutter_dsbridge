@@ -13,6 +13,38 @@ DSBridge-Android：https://github.com/wendux/DSBridge-Android
 
 DSBridge-IOS：https://github.com/wendux/DSBridge-IOS    
 
+## Demo 展示
+
+以下截图来自 iPhone 16 Pro 模拟器（iOS 18.1）实际运行的 Debug 版本。运行步骤及示例说明见 [Demo README](demo/README.md)。
+
+<table>
+  <tr>
+    <th>示例首页</th>
+    <th>Flutter → JavaScript</th>
+  </tr>
+  <tr>
+    <td><img src="demo/docs/screenshots/01-home.png" width="280" alt="DSBridge Demo 首页"></td>
+    <td><img src="demo/docs/screenshots/02-flutter-to-js.png" width="280" alt="Flutter 调用 JavaScript 的返回日志"></td>
+  </tr>
+  <tr>
+    <td>双向通信、网页标题、隐藏导航栏及错误页的示例入口。</td>
+    <td>同步加法返回 7，异步拼接返回 I love you，并展示 await 和方法检测结果。</td>
+  </tr>
+  <tr>
+    <th>JavaScript → Flutter</th>
+    <th>网页加载失败</th>
+  </tr>
+  <tr>
+    <td><img src="demo/docs/screenshots/03-js-to-flutter.png" width="280" alt="JavaScript 调用 Flutter 后的返回值弹窗"></td>
+    <td><img src="demo/docs/screenshots/04-load-error.png" width="280" alt="网页加载失败提示与重试按钮"></td>
+  </tr>
+  <tr>
+    <td>网页调用 Flutter 同步接口，通过弹窗展示返回值。</td>
+    <td>Demo 网页容器访问不存在的域名，展示错误信息与重新加载入口。</td>
+  </tr>
+</table>
+
+Demo 还展示了命名空间、初始化前调用排队、连续回调、网页弹窗，以及自动网页标题、自定义标题和隐藏导航栏等用法。
 
 ## 原理
 
